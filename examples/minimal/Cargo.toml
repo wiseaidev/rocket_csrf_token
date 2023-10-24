@@ -1,13 +1,13 @@
 [package]
-name = "rocket_csrf_example_minimal"
-version = "0.0.0"
-authors = ["Alex Kotov <kotovalexarian@gmail.com>"]
-edition = "2018"
+name = "rocket_csrf_token_example_minimal"
+version = "0.0.1"
+authors = ["Alex Kotov <kotovalexarian@gmail.com>", "Mahmoud Harmouch <oss@wiseai.dev>"]
+edition = "2021"
 publish = false
 
 [dependencies]
-rocket = "0.5.0-rc.2"
-rocket_csrf = { path = "../.." }
-rocket_dyn_templates = { version = "0.1.0-rc.2", features = ["handlebars"] }
-serde = "1.0.117"
-serde_derive = "1.0.117"
+rocket = "=0.5.0-rc.3"
+rocket_csrf_token = { path = "../.." }
+rocket_dyn_templates = { version = "0.1.0-rc.3", features = ["handlebars"] }
+serde = "1.0.189"
+serde_derive = "1.0.189"
