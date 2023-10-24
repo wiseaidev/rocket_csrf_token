@@ -4,7 +4,9 @@ extern crate rocket;
 use bcrypt::verify;
 use rand::RngCore;
 use rocket::http::Cookie;
-use rocket_csrf::CsrfToken;
+use rocket_csrf_token::CsrfToken;
+
+use base64::{engine::general_purpose, Engine as _};
 
 const COOKIE_NAME: &str = "foobar";
 const COOKIE_LEN: usize = 64;
@@ -15,8 +17,8 @@ fn client() -> rocket::local::blocking::Client {
 
 fn rocket() -> rocket::Rocket<rocket::Build> {
     rocket::build()
-        .attach(rocket_csrf::Fairing::new(
-            rocket_csrf::CsrfConfig::default()
+        .attach(rocket_csrf_token::Fairing::new(
+            rocket_csrf_token::CsrfConfig::default()
                 .with_cookie_name(COOKIE_NAME)
                 .with_cookie_len(COOKIE_LEN)
                 .with_lifetime(rocket::time::Duration::days(3)),
@@ -34,7 +36,7 @@ fn respond_with_valid_authenticity_token() {
     let mut raw = [0u8; COOKIE_LEN];
     rand::thread_rng().fill_bytes(&mut raw);
 
-    let encoded = base64::encode(raw);
+    let encoded = general_purpose::STANDARD.encode(raw);
 
     let body = client()
         .get("/")

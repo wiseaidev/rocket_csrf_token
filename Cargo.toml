@@ -1,19 +1,19 @@
 [package]
-name = "rocket_csrf"
-version = "0.3.0"
-authors = ["Alex Kotov <kotovalexarian@gmail.com>"]
-edition = "2018"
+name = "rocket_csrf_token"
+version = "0.3.1"
+authors = ["Alex Kotov <kotovalexarian@gmail.com>", "Mahmoud Harmouch <oss@wiseai.dev>"]
+edition = "2021"
 description = "CSRF (Cross-Site Request Forgery) protection for Rocket web framework"
 readme = true
-homepage = "https://github.com/kotovalexarian/rocket_csrf"
-repository = "https://github.com/kotovalexarian/rocket_csrf.git"
+homepage = "https://github.com/wiseaidev/rocket_csrf_token "
+repository = "https://github.com/wiseaidev/rocket_csrf_token .git"
 license = "MIT"
 keywords = ["csrf", "http", "rocket", "security", "web"]
 categories = ["web-programming"]
 publish = true
 
 [dependencies]
-base64 = { version = "0.13.0" }
-bcrypt = { version = "0.9" }
-rand   = { version = "0.8.3" }
-rocket = { version = "0.5.0-rc.2", features = ["secrets"] }
+base64 = "0.21.5"
+bcrypt = "0.15.0"
+rand = "0.8.5"
+rocket = { version = "=0.5.0-rc.3", features = ["secrets"] }

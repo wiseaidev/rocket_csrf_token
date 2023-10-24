@@ -1,3 +1,4 @@
+use base64::{engine::general_purpose, Engine as _};
 use bcrypt::{hash, verify};
 use rand::{distributions::Standard, Rng};
 use rocket::{
@@ -42,9 +43,9 @@ impl Default for Fairing {
 }
 
 impl Default for CsrfConfig {
+    /// Set to 6hour for default in Database Session stores.
     fn default() -> Self {
         Self {
-            /// Set to 6hour for default in Database Session stores.
             lifespan: Duration::days(1),
             cookie_name: "csrf_token".into(),
             cookie_len: 32,
@@ -120,7 +121,7 @@ impl RocketFairing for Fairing {
             .take(config.cookie_len)
             .collect();
 
-        let encoded = base64::encode(&values[..]);
+        let encoded = general_purpose::STANDARD.encode(&values[..]);
 
         let expires = OffsetDateTime::now_utc() + config.lifespan;
 
@@ -141,7 +142,18 @@ impl<'r> FromRequest<'r> for CsrfToken {
 
         match request.valid_csrf_token_from_session(&config) {
             None => Outcome::Failure((Status::Forbidden, ())),
-            Some(token) => Outcome::Success(Self(base64::encode(token))),
+            Some(token) => Outcome::Success(Self(general_purpose::STANDARD.encode(token))),
+        }
+    }
+}
+
+#[async_trait]
+impl RocketFairing for CsrfToken {
+    // This is a request fairing named "GET CsrfToken".
+    fn info(&self) -> Info {
+        Info {
+            name: "GET/POST Counter",
+            kind: Kind::Request,
         }
     }
 }
@@ -164,6 +176,6 @@ impl RequestCsrf for Request<'_> {
     fn csrf_token_from_session(&self, config: &CsrfConfig) -> Option<Vec<u8>> {
         self.cookies()
             .get_private(&config.cookie_name)
-            .and_then(|cookie| base64::decode(cookie.value()).ok())
+            .and_then(|cookie| general_purpose::STANDARD.decode(cookie.value()).ok())
     }
 }
