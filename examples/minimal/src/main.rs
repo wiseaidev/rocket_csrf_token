@@ -58,7 +58,7 @@ fn new(
     _authenticated: Authenticated,
 ) -> Template {
     let template_context = TemplateContext {
-        authenticity_token: csrf_token.authenticity_token().to_string(),
+        authenticity_token: csrf_token.authenticity_token().unwrap().to_string(),
         flash: flash.map(|flash| flash.message().to_string()),
     };
 
@@ -71,7 +71,6 @@ fn create(
     form: Form<Comment>,
     _authenticated: Authenticated,
 ) -> Flash<Redirect> {
-    println!("{:?}", form.authenticity_token);
     if let Err(_) = csrf_token.verify(&form.authenticity_token) {
         return Flash::error(Redirect::to(uri!(new)), "Invalid authenticity token");
     }
