@@ -5,6 +5,7 @@ extern crate rocket;
 #[macro_use]
 extern crate serde_derive;
 
+use dotenv;
 use rocket::form::Form;
 use rocket::request::{FlashMessage, FromRequest};
 use rocket::response::{Flash, Redirect};
@@ -37,13 +38,20 @@ impl<'r> FromRequest<'r> for Authenticated {
     }
 }
 
-#[launch]
-fn rocket() -> _ {
+#[rocket::main]
+async fn main() -> Result<(), rocket::Error> {
+    dotenv::dotenv().ok();
     rocket::build()
-        .attach(rocket_csrf_token::Fairing::default())
+        .attach(rocket_csrf_token::Fairing::new(
+            rocket_csrf_token::CsrfConfig::default().with_lifetime(None),
+        ))
         .attach(Template::fairing())
         .register("/", catchers![not_authorized])
         .mount("/", routes![index, new, create])
+        .launch()
+        .await
+        .expect("Launch Error");
+    Ok(())
 }
 
 #[get("/")]

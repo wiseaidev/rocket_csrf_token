@@ -24,8 +24,11 @@
 //! 3. Initialize the CSRF protection with your custom configuration:
 //!
 //! ```rust
+//! use rocket_csrf_token::{CsrfConfig, Fairing};
+//! use rocket::{Rocket, Build, launch};
+//!
 //! #[launch]
-//! fn rocket() -> _ {
+//! fn rocket() -> Rocket<Build> {
 //!     rocket::build()
 //!         .attach(Fairing::new(CsrfConfig::default()))
 //!         // ...
@@ -50,10 +53,11 @@
 //!
 //! ```rust
 //! use rocket_csrf_token::CsrfConfig;
+//! use rocket::time::Duration;
 //!
 //! fn main() {
 //!     let csrf_config = CsrfConfig::default()
-//!         .with_lifetime(Duration::hours(2))
+//!         .with_lifetime(Some(Duration::hours(2)))
 //!         .with_cookie_name("my_csrf_token")
 //!         .with_cookie_len(64);
 //!     // ...
@@ -65,6 +69,9 @@
 //! The `Fairing` struct integrates CSRF protection into your Rocket application. You can attach the fairing during Rocket's setup to enable CSRF protection:
 //!
 //! ```rust
+//! use rocket_csrf_token::{CsrfConfig, Fairing};
+//! use rocket::launch;
+//!
 //! #[launch]
 //! fn rocket() -> _ {
 //!     rocket::build()
@@ -78,20 +85,28 @@
 //! Use the provided request guards and functionality to handle CSRF tokens within your routes:
 //!
 //! ```rust
-//! use rocket_csrf_token::CsrfToken;
+//! use rocket_csrf_token::{CsrfToken, Fairing};
+//! use rocket::{post, http::Status, form::Form, FromForm};
 //!
-//! #[post("/secure-endpoint")]
-//! async fn secure_endpoint(token: CsrfToken) -> Result<(), rocket::response::Status> {
+//! #[derive(FromForm)]
+//! struct PostData {
+//!     authenticity_token: String,
+//!     data: String,
+//! }
+//!
+//! #[post("/secure-endpoint", data = "<form>")]
+//! async fn secure_endpoint(token: CsrfToken, form: Form<PostData>) -> Result<(), Status> {
 //!     // Verify the CSRF token and process the request
-//!     if token.verify(&request_auth_token).is_ok() {
+//!     if token.verify(&form.authenticity_token).is_ok() {
 //!         // Request is valid, continue processing
 //!         // ...
 //!         Ok(())
 //!     } else {
 //!         // Handle the CSRF token verification failure
-//!         Err(rocket::response::Status::Forbidden)
+//!         Err(Status::Forbidden)
 //!     }
 //! }
+//!
 //! ```
 //!
 //! # GitHub Repository
@@ -139,7 +154,7 @@ const _TOKEN_META_NAME: &str = "csrf-token";
 #[derive(Debug, Clone)]
 pub struct CsrfConfig {
     /// The duration for which the CSRF token remains valid.
-    lifespan: Duration,
+    lifespan: Option<Duration>,
     /// The name of the CSRF cookie that stores the token.
     cookie_name: Cow<'static, str>,
     /// The length of the CSRF token in bytes.
@@ -155,7 +170,7 @@ impl Default for CsrfConfig {
     /// This function returns a new CsrfConfig instance with the default settings.
     fn default() -> Self {
         Self {
-            lifespan: Duration::days(1),
+            lifespan: Some(Duration::days(1)),
             cookie_name: "csrf_token".into(),
             cookie_len: 32,
         }
@@ -165,11 +180,11 @@ impl Default for CsrfConfig {
 impl CsrfConfig {
     /// Sets the lifespan of the CSRF token cookie.
     /// # Arguments
-    /// * `time` - The duration for which the CSRF token remains valid.
+    /// * `Option<rocket::Duration>` - The duration for which the CSRF token remains valid.
     ///
     /// This function modifies the CsrfConfig instance by setting the token lifespan to the
     /// specified duration.
-    pub fn with_lifetime(mut self, time: Duration) -> Self {
+    pub fn with_lifetime(mut self, time: Option<Duration>) -> Self {
         self.lifespan = time;
         self
     }
@@ -212,6 +227,8 @@ impl Default for Fairing {
     }
 }
 
+/// Define custom methods and functions for the `Fairing` type itself.
+/// It is like defining methods in a blueprint or abstract class.
 impl Fairing {
     /// Creates a new CSRF protection fairing with the provided configuration.
     /// # Arguments
@@ -226,8 +243,11 @@ impl Fairing {
 
 /// Structure to hold a CSRF token. This token can be used for generating authenticity tokens
 /// and verifying the authenticity of incoming requests.
+#[derive(Clone)]
 pub struct CsrfToken(String);
 
+/// Define custom methods and functions for the `CsrfToken` type itself.
+/// Again, it is like defining methods in a blueprint or abstract class.
 impl CsrfToken {
     /// Generates an authenticity token using the stored CSRF token.
     ///
@@ -238,7 +258,11 @@ impl CsrfToken {
     /// # Returns
     /// (`Result<String, BcryptError>`): The generated authenticity token or an error if token generation fails.
     pub fn authenticity_token(&self) -> Result<String, BcryptError> {
-        hash(&self.0, BCRYPT_COST)
+        // Handle potential errors from the hash function.
+        match hash(&self.0, BCRYPT_COST) {
+            Ok(token) => Ok(token),
+            Err(err) => Err(err),
+        }
     }
 
     /// Verifies if a provided token matches the stored CSRF token.
@@ -250,16 +274,15 @@ impl CsrfToken {
     /// stored CSRF token, this function returns `Ok(())`. Otherwise, it returns an error of type `VerificationFailure`.
     ///
     /// # Returns
-    /// (`Result<(), VerificationFailure>`): A result indicating success if the tokens match, or a VerificationFailure error if they do not.
+    /// (`Result<(), VerificationFailure>`): A result indicating success if the tokens match, or a `VerificationFailure`
+    /// error if they do not.
     pub fn verify(&self, form_authenticity_token: &String) -> Result<(), VerificationFailure> {
+        // Use a Result to propagate potential errors from the verify function.
         if verify(&self.0, form_authenticity_token).unwrap_or(false) {
             // CSRF token verification succeeded.
             info!("CSRF token verification succeeded.");
             Ok(())
         } else {
-            // Handle the VerificationFailure error.
-            // Log the error.
-            error!("{:?}", VerificationFailure);
             Err(VerificationFailure {})
         }
     }
@@ -304,7 +327,7 @@ impl RocketFairing for Fairing {
     /// ```
     /// // Handling incoming requests and adding CSRF cookies
     /// ```
-    async fn on_request(&self, request: &mut Request<'_>, _: &mut Data<'_>) {
+    async fn on_request(&self, request: &mut Request<'_>, data: &mut Data<'_>) {
         let config = match request.guard::<&State<CsrfConfig>>().await {
             Outcome::Success(cfg) => cfg,
             Outcome::Failure(e) => {
@@ -330,14 +353,22 @@ impl RocketFairing for Fairing {
 
         let encoded = general_purpose::STANDARD.encode(&values[..]);
 
-        let _expires = OffsetDateTime::now_utc() + config.lifespan;
+        let expires = match config.lifespan {
+            Some(duration) => Some(OffsetDateTime::now_utc() + duration),
+            None => None, // Expiration of None means a session cookie
+        };
 
-        if request.cookies().add_private(
-            Cookie::build(config.cookie_name.clone(), encoded)
-                // .expires(expires) // TODO: Removing this method will make the cookie expire with the session?
-                .finish(),
-        ) == ()
-        {
+        let cookie_builder = Cookie::build(config.cookie_name.clone(), encoded).path("/");
+
+        let cookie_builder = match expires {
+            Some(expiration) => cookie_builder.expires(expiration),
+            None => cookie_builder.expires(None), // Expiration of None means duration of session
+                                                  // Reference: https://api.rocket.rs/v0.5-rc/rocket/http/struct.Cookie.html#method.set_expires
+        };
+
+        let cookie = cookie_builder.finish();
+
+        if request.cookies().add_private(cookie) == () {
             // The cookie was added successfully.
             info!("CSRF cookie added successfully.");
         } else {
@@ -345,6 +376,7 @@ impl RocketFairing for Fairing {
             // Log an error.
             error!("Failed to add CSRF cookie");
         }
+        let _ = CsrfToken("".to_string()).on_request(request, data).await;
     }
 }
 
@@ -432,59 +464,34 @@ impl RocketFairing for CsrfToken {
     /// * `_data` - A mutable reference to the Rocket Data.
     async fn on_request(&self, request: &mut Request<'_>, _data: &mut Data<'_>) {
         // Retrieve CSRF token from the request and CSRF configuration
-        let csrf_token = CsrfToken::from_request(request).await;
+        let csrf_token = request.headers().get_one(HEADER_NAME).map(String::from);
         let csrf_config = request.guard::<&State<CsrfConfig>>().await;
-
         match csrf_config {
             Outcome::Success(_config) => {
                 // CSRF config is available, continue with verification
-                match csrf_token {
-                    Outcome::Success(token) => {
-                        // Retrieve the authenticity token from the request
-                        let authenticity_token =
-                            request.headers().get_one(HEADER_NAME).map(String::from);
-
-                        // Perform verification or error handling as needed
-                        match authenticity_token {
-                            Some(auth_token) => {
-                                match token.verify(&auth_token) {
-                                    Ok(_) => {
-                                        // Request is valid, continue processing
-                                        // CsrfToken is successfully created, add it to the request's local cache
-                                        request.local_cache(|| CsrfToken(auth_token));
-                                    }
-                                    Err(err) => {
-                                        // Handle the VerificationFailure error
-                                        // Log the error
-                                        error!("{:?}", err);
-                                        // TODO: Set the response status to Forbidden
-                                        // return an error response to the client
-                                    }
-                                }
-                            }
-                            None => {
-                                // Handle the case where the request lacks an authenticity token
-                                // Log the error or perform appropriate error handling
-                                error!("Request lacks X-CSRF-Token");
-
-                                // TODO: Set the response status to Forbidden
-                                // return an error response to the client
-                            }
+                if csrf_token.is_some() {
+                    match self.verify(&csrf_token.clone().unwrap()) {
+                        Ok(_) => {
+                            // Request is valid, continue processing
+                            // CsrfToken is successfully created, add it to the request's local cache
+                            info!("CsrfToken is successfully created");
+                            request.local_cache(|| CsrfToken(csrf_token.unwrap()));
+                        }
+                        Err(err) => {
+                            // Handle the VerificationFailure error
+                            // Log the error
+                            error!("{:?}", err);
+                            // TODO: Set the response status to Forbidden
+                            // return an error response to the client
                         }
                     }
-                    Outcome::Failure(e) => {
-                        // Handle the case where CSRF token is missing or invalid
-                        // Log the error or perform appropriate error handling
-                        error!("CSRF token is missing or invalid: {:?}", e);
+                } else {
+                    // Handle the case where the request lacks an authenticity token
+                    // Log the error or perform appropriate error handling
+                    error!("Request lacks X-CSRF-Token");
 
-                        // TODO: Set the response status to Forbidden
-                        // return an error response to the client
-                    }
-                    Outcome::Forward(_) => {
-                        // Handle the case where the request should be forwarded
-                        // Log the error
-                        error!("Request should be forwarded");
-                    }
+                    // TODO: Set the response status to Forbidden
+                    // return an error response to the client
                 }
             }
             Outcome::Failure(e) => {
@@ -520,7 +527,7 @@ pub struct VerificationFailure;
 
 impl fmt::Debug for VerificationFailure {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "CSRF token verification failed")
+        write!(f, "CSRF token verification failed!")
     }
 }
 

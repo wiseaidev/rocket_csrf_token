@@ -348,6 +348,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "dotenv"
+version = "0.15.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "77c90badedccf4105eca100756a0b1289e191f6fcbdadd3cee1d2f614f97da8f"
+
+[[package]]
 name = "either"
 version = "1.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1283,7 +1289,7 @@ dependencies = [
 
 [[package]]
 name = "rocket_csrf_token"
-version = "0.3.1"
+version = "0.3.2"
 dependencies = [
  "base64",
  "bcrypt",
@@ -1295,6 +1301,7 @@ dependencies = [
 name = "rocket_csrf_token_example_minimal"
 version = "0.0.1"
 dependencies = [
+ "dotenv",
  "rocket",
  "rocket_csrf_token",
  "rocket_dyn_templates",
