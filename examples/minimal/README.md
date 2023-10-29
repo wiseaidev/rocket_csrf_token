@@ -14,6 +14,7 @@
 
 ![App Demo](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/lcpfehq4rsjpwrjjehvr.png)
 
+> **Note**<br>
 The cookie's expiration coincides with the end of the user's session. This alignment occurs because the token's lifespan is deliberately configured as `None`. By setting the lifespan to `None`, the token implicitly adopts the same lifespan as the session, which is the default behavior. This means that when the user's session ends, the token, being closely tied to it, also expires. This mechanism ensures that the token remains valid and active only as long as the session itself, enhancing security and reliability.
 
 ![Session Cookie](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/nbrd2kxsm91kuvtdm240.png)
