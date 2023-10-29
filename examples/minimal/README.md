@@ -14,19 +14,31 @@
 
 ![App Demo](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/lcpfehq4rsjpwrjjehvr.png)
 
+The cookie's expiration coincides with the end of the user's session. This alignment occurs because the token's lifespan is deliberately configured as `None`. By setting the lifespan to `None`, the token implicitly adopts the same lifespan as the session, which is the default behavior. This means that when the user's session ends, the token, being closely tied to it, also expires. This mechanism ensures that the token remains valid and active only as long as the session itself, enhancing security and reliability.
+
+![Session Cookie](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/nbrd2kxsm91kuvtdm240.png)
+
 ## 🔒 CSRF Protection
 
 This project incorporates robust CSRF protection mechanisms. CSRF attacks occur when unauthorized requests are made on behalf of a user without their consent. Rocket's CSRF protection ensures that form submissions contain a valid CSRF token, significantly enhancing the security of your web forms. 🌐
 
 ## 🧪 Testing CSRF Protection
 
-To test the CSRF protection, you can use the following `curl` command:
+To rigorously assess the effectiveness of your Cross-Site Request Forgery (CSRF) protection mechanisms, you can employ the following `curl` command:
 
 ```bash
-curl -X POST -d "authenticity_token=invalid&text=sus" http://127.0.0.1:8000/comments
+curl -X POST -d "authenticity_token=invalid" -d "text=sus" http://127.0.0.1:8000/comments
 ```
 
-Running this command will result in a "403 Forbidden: Unauthorized Access" response. This occurs because the provided `authenticity_token` is invalid, and the CSRF token validation in the application rightfully rejects the request.
+When executing this command, you should anticipate receiving a "403 Forbidden: Unauthorized Access" response from your Rocket application. Concurrently, the application will raise an error message stating "Error: Request lacks X-CSRF-Token." This outcome is a direct consequence of the provided `authenticity_token` being invalid. Furthermore, the request fails to include the essential `X-CSRF-Token` header. Subsequently, the CSRF token validation mechanism within your application rightfully rejects the request.
+
+To further evaluate your CSRF defenses, you can simulate a scenario where the `X-CSRF-Token` header is explicitly set as follows:
+
+```bash
+curl -X POST  -H "X-CSRF-Token: invalid" -d "authenticity_token=invalid" -d "text=sus" http://127.0.0.1:8000/comments
+```
+
+In this scenario, the Rocket application will respond by displaying the error message "Error: CSRF token verification failed!" This time, both the provided `authenticity_token` and the supplied `X-CSRF-Token` header are determined to be invalid, resulting in a test of your CSRF protection.
 
 ## ✅ Successful POST Request
 

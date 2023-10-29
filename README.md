@@ -37,7 +37,7 @@ fn rocket() -> _ {
           ::default()
           .with_cookie_name("foobar")
           .with_cookie_len(64)
-          .with_lifetime(rocket::time::Duration::days(3))
+          .with_lifetime(Some(rocket::time::Duration::days(3)))
       )
     )
     .attach(Template::fairing())
@@ -115,9 +115,9 @@ See the complete code in [minimal example](examples/minimal).
 
 ## TODO
 
-- [X] Add fairing to verify all requests as an option (Requires unit tests).
-- [X] Verify `X-CSRF-Token` header (Requires unit tests).
-- [X] Set cookie to expire with session (Requires unit tests).
+- [X] Add fairing to verify all requests as an option.
+- [X] Verify `X-CSRF-Token` header.
+- [X] Set cookie to expire with session.
 - [ ] Add [data guard](https://api.rocket.rs/v0.5-rc/rocket/data/trait.FromData.html) to verify forms with a guard.
 - [ ] Add helpers to render form field.
 - [ ] Add helpers to add HTML meta tags for Ajax with `X-CSRF-Token` header (WIP).
