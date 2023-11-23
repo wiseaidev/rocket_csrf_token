@@ -330,7 +330,7 @@ impl RocketFairing for Fairing {
     async fn on_request(&self, request: &mut Request<'_>, data: &mut Data<'_>) {
         let config = match request.guard::<&State<CsrfConfig>>().await {
             Outcome::Success(cfg) => cfg,
-            Outcome::Failure(e) => {
+            Outcome::Error(e) => {
                 // Log an error for the missing CSRF config.
                 error!("CSRF config is missing: {:?}", e);
                 return;
@@ -358,15 +358,15 @@ impl RocketFairing for Fairing {
             None => None, // Expiration of None means a session cookie
         };
 
-        let cookie_builder = Cookie::build(config.cookie_name.clone(), encoded).path("/");
+        let cookie_builder = Cookie::build((config.cookie_name.clone(), encoded)).path("/");
 
         let cookie_builder = match expires {
             Some(expiration) => cookie_builder.expires(expiration),
             None => cookie_builder.expires(None), // Expiration of None means duration of session
-                                                  // Reference: https://api.rocket.rs/v0.5-rc/rocket/http/struct.Cookie.html#method.set_expires
+                                                  // Reference: https://api.rocket.rs/master/rocket/http/struct.Cookie.html#method.set_expires
         };
 
-        let cookie = cookie_builder.finish();
+        let cookie = cookie_builder.build();
 
         if request.cookies().add_private(cookie) == () {
             // The cookie was added successfully.
@@ -401,7 +401,7 @@ impl<'r> FromRequest<'r> for CsrfToken {
                 let encoded = general_purpose::STANDARD.encode(token);
                 Outcome::Success(Self(encoded))
             }
-            None => Outcome::Failure((Status::Forbidden, ())),
+            None => Outcome::Error((Status::Forbidden, ())),
         }
     }
 }
@@ -494,7 +494,7 @@ impl RocketFairing for CsrfToken {
                     // return an error response to the client
                 }
             }
-            Outcome::Failure(e) => {
+            Outcome::Error(e) => {
                 // Handle the case where CSRF config is missing
                 // Log the error or perform appropriate error handling
                 error!("CSRF config is missing: {:?}", e);
