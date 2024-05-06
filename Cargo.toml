@@ -13,7 +13,7 @@ categories = ["web-programming"]
 publish = true
 
 [dependencies]
-base64 = "0.21.5"
+base64 = "0.22.1"
 bcrypt = "0.15.0"
 rand = "0.8.5"
 rocket = { version = "=0.5.0", features = ["secrets"] }
