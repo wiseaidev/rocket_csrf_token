@@ -4,7 +4,7 @@ A slightly more maintained version of [rocket_csrf](https://github.com/kotovalex
 
 ## Usage
 
-Attach [fairing](https://rocket.rs/v0.5-rc/guide/fairings/#fairings) to the Rocket instance:
+Attach [fairing](https://rocket.rs/v0.5/guide/fairings/#fairings) to the Rocket instance:
 
 ```rust
 #![feature(decl_macro)]
@@ -25,7 +25,7 @@ fn rocket() -> _ {
 }
 ```
 
-You also can configure [fairing](https://rocket.rs/v0.5-rc/guide/fairings/#fairings):
+You also can configure [fairing](https://rocket.rs/v0.5/guide/fairings/#fairings):
 
 ```rust
 #[launch]
@@ -45,7 +45,7 @@ fn rocket() -> _ {
 }
 ```
 
-Add [guard](https://rocket.rs/v0.5-rc/guide/requests/#request-guards) to any request where you want to have access to session's CSRF token (e.g. to include it in forms) or verify it (e.g. to validate form):
+Add [guard](https://rocket.rs/v0.5/guide/requests/#request-guards) to any request where you want to have access to session's CSRF token (e.g. to include it in forms) or verify it (e.g. to validate form):
 
 ```rust
 use rocket::form::Form;
@@ -64,7 +64,7 @@ fn create(csrf_token: CsrfToken, form: Form<Comment>) -> Redirect {
 }
 ```
 
-Get CSRF token from [guard](https://rocket.rs/v0.5-rc/guide/requests/#request-guards) to use it in [templates](https://rocket.rs/v0.5-rc/guide/responses/#templates):
+Get CSRF token from [guard](https://rocket.rs/v0.5/guide/requests/#request-guards) to use it in [templates](https://rocket.rs/guide/v0.5/responses/#templates):
 
 ```rust
 #[get("/comments/new")]
@@ -75,7 +75,7 @@ fn new(csrf_token: CsrfToken) -> Template {
 }
 ```
 
-Add CSRF token to your HTML forms in [templates](https://rocket.rs/v0.5-rc/guide/responses/#templates):
+Add CSRF token to your HTML forms in [templates](https://rocket.rs/guide/v0.5/responses/#templates):
 
 ```html
 <form method="post" action="/comments">
@@ -88,7 +88,7 @@ Add CSRF token to your HTML forms in [templates](https://rocket.rs/v0.5-rc/guide
 </form>
 ```
 
-Add attribute `authenticity_token` to your [forms](https://rocket.rs/v0.5-rc/guide/requests/#forms):
+Add attribute `authenticity_token` to your [forms](https://rocket.rs/v0.5/guide/requests/#forms):
 
 ```rust
 #[derive(FromForm)]
@@ -98,7 +98,7 @@ struct Comment {
 }
 ```
 
-Validate [forms](https://rocket.rs/v0.5-rc/guide/requests/#forms) to have valid authenticity token:
+Validate [forms](https://rocket.rs/v0.5/guide/requests/#forms) to have valid authenticity token:
 
 ```rust
 #[post("/comments", data = "<form>")]
@@ -118,7 +118,7 @@ See the complete code in [minimal example](examples/minimal).
 - [X] Add fairing to verify all requests as an option.
 - [X] Verify `X-CSRF-Token` header.
 - [X] Set cookie to expire with session.
-- [ ] Add [data guard](https://api.rocket.rs/v0.5-rc/rocket/data/trait.FromData.html) to verify forms with a guard.
+- [ ] Add [data guard](https://api.rocket.rs/v0.5/rocket/data/trait.FromData.html) to verify forms with a guard.
 - [ ] Add helpers to render form field.
 - [ ] Add helpers to add HTML meta tags for Ajax with `X-CSRF-Token` header (WIP).
 - [ ] Use authenticity token encryption from [Ruby on Rails](https://github.com/rails/rails/blob/v6.0.3.4/actionpack/lib/action_controller/metal/request_forgery_protection.rb).
